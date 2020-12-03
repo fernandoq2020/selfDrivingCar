@@ -9,7 +9,10 @@ from keras.optimizers import Adam
 #to save our model periodically as checkpoints for loading later
 from keras.callbacks import ModelCheckpoint
 #what types of layers do we want our model to have?
-from keras.layers import Lambda, Conv2D, MaxPooling2D, Dropout, Dense, Flatten
+from keras.layers import Lambda, Activation, Conv2D, MaxPooling2D, Convolution2D, Dropout, Dense, Flatten
+from keras.layers.advanced_activations import ELU
+
+
 #helper class to define input shape and generate training images given image paths & steering angles
 from utils import INPUT_SHAPE, batch_generator
 #for command line arguments
@@ -63,11 +66,14 @@ def build_model(args):
     """
     model = Sequential()
     model.add(Lambda(lambda x: x/127.5-1.0, input_shape=INPUT_SHAPE))
-    model.add(Conv2D(24, 5, 5, activation='elu', subsample=(2, 2)))
-    model.add(Conv2D(36, 5, 5, activation='elu', subsample=(2, 2)))
-    model.add(Conv2D(48, 5, 5, activation='elu', subsample=(2, 2)))
-    model.add(Conv2D(64, 3, 3, activation='elu'))
-    model.add(Conv2D(64, 3, 3, activation='elu'))
+    model.add(Conv2D(24, 5, 2, activation='elu'))
+    model.add(Conv2D(36, 5, 2, activation='elu'))
+    model.add(Conv2D(48, 5, 2, activation='elu'))
+    model.add(Conv2D(64, 3, activation='elu'))
+    model.add(Conv2D(64, 3, activation='elu'))
+    
+    
+    
     model.add(Dropout(args.keep_prob))
     model.add(Flatten())
     model.add(Dense(100, activation='elu'))
@@ -113,12 +119,13 @@ def train_model(model, args, X_train, X_valid, y_train, y_valid):
     model.fit_generator(batch_generator(args.data_dir, X_train, y_train, args.batch_size, True),
                         args.samples_per_epoch,
                         args.nb_epoch,
-                        max_q_size=1,
+                        max_queue_size=1,
                         validation_data=batch_generator(args.data_dir, X_valid, y_valid, args.batch_size, False),
-                        nb_val_samples=len(X_valid),
+                        workers=len(X_valid),
                         callbacks=[checkpoint],
                         verbose=1)
-
+    
+    
 #for command line args
 def s2b(s):
     """
